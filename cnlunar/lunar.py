@@ -62,33 +62,24 @@ class Lunar:
         self.meridians = meridiansName[self.twohourNum % 12]
 
     def getBeginningOfSpringX(self):
-        # print(self.nextSolarTermYear, self.lunarYear, self.nextSolarNum, self.lunarYear - self.nextSolarTermYear)
-        isBeforBeginningOfSpring = self.nextSolarNum < 3
-        # print('是否在立春前', isBeforBeginningOfSpring, self.nextSolarNum)
-        # print('spanDays', self.spanDays)
-        isBeforLunarYear = self.spanDays < 0
-        # print('是过农历年', isBeforLunarYear)
+        # 立春换年：干支年以立春为界（天精度），不以春节为界。
+        # 2026-10-09 修复：旧逻辑用 nextSolarNum < 3 判"立春前"，冬至后
+        # （12-21 起）下个节气为小寒（索引 0）也被误判为立春前，导致
+        # _x=1 误减一年（如 2020-12-25 公认庚子年却给出己亥）。
         _x = 0
         if self.year8Char != 'beginningOfSpring':
             return _x
-        # 现在节气在立春之前 且 已过完农历年(农历小于3月作为测试判断)，年柱需要减1
-        if isBeforLunarYear:
-            # print('还没过农历年')
-            if not isBeforBeginningOfSpring:
-            #     print('立春前')
-            #     _x = 0
-            # else:
-            #     print('立春后')
-                _x = -1
-        else:
-            # print('过农历年了')
-            if isBeforBeginningOfSpring:
-                # print('立春前')
-                _x = 1
-        #     else:
-        #         print('立春后')
-        #         _x = 0
-        # print(_x)
+        # 立春在当年节气表中索引为 2（小寒 0、大寒 1、立春 2）
+        lichun_md = self.thisYearSolarTermsDateList[2]
+        before_lichun = (self.date.month, self.date.day) < lichun_md
+        # 春节是否已过：农历年份追上公历年份即已过当年春节
+        nian_passed = (self.lunarYear == self.date.year)
+        if nian_passed and before_lichun:
+            # 春节已过、立春未到（如 2020-01-30）：干支年还没换，减一年
+            _x = 1
+        elif not nian_passed and not before_lichun:
+            # 立春已过、春节未到（如 2021-02-05）：干支年已换，加一年
+            _x = -1
         return _x
 
 
